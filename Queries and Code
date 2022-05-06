@@ -1,0 +1,108 @@
+--Find the number of employees at each office location. 
+
+SELECT COUNT(employees.employeeNumber), offices.city FROM 
+employees JOIN offices ON 
+employees.officeCode = offices.officeCode GROUP BY City
+
+-- Find the top ten orders in terms of total quantity ordered. 
+
+Select quantityOrdered, orderNumber FROM orderdetails 
+GROUP BY quantityOrdered DESC LIMIT 10
+
+-- Find the total value of orders for each customer. 
+
+ Select (quantityOrdered) *(priceEach),ordernumber 
+ From orderdetails Group By OrderNumber
+
+-- Find the total value of orders to customers of each country. 
+
+Select (orderdetails.quantityOrdered) *(orderdetails.priceEach)
+                AS Tot_Value , orders.orderNumber, customers.country From orderdetails 
+               Join orders Join customers Where orderdetails.orderNumber = orders.orderNumber 
+               and orders.customerNumber = customers.CustomerNumber Group By Country
+
+-- List the revenue generated for each product in each country, displaying productName, country and revenue ordered by country and revenue descending.
+
+  Select (orderdetails.quantityOrdered) *(orderdetails.priceEach) AS Tot_Value 
+       ,products.productName,customers.country,orders.orderNumber From orders Join 
+                orderdetails Join products Join customers Where products.productcode = 
+               orderdetails.productCode and orderdetails.ordernumber = orders.orderNumber and
+               orders.customerNumber = customers.customerNumber
+
+-- Using an appropriate string function find the proportion of products that contain the word “Ford” in the productName.
+
+SELECT ((SELECT COUNT(productname) FROM products WHERE productname like   '%Ford%')/(SELECT Count(productname) FROM products))
+
+
+-- A user wishes to explore the products where the MRSP is between two specified prices. 
+--By using two variables to represent the inputted prices, write a query to return the product details for products between those two prices.
+
+SET @MSRPStartPrice=50
+SET @MSRPEndPrice=150
+SELECT productname,MSRP FROM products WHERE MSRP>= @MSRPStartPrice AND MSRP <=@MSRPEndPrice
+
+-- Create a temporary table to store the total value of all sales to each customer and a separate table to store the total of all payments received from a customer.
+--Using these tables find the amount owed by each customer. 
+
+CREATE TEMPORARY TABLE CustomerSales AS
+SELECT customers.customerNumber, customerName, SUM(priceEach*quantityOrdered) AS sales
+FROM customers
+JOIN orders ON customers.customerNumber = orders.customerNumber
+JOIN orderdetails ON orders.orderNumber = orderdetails.orderNumber
+GROUP BY customerNumber
+ORDER BY customerNumber;
+
+CREATE TEMPORARY TABLE CustomerPayments AS	
+SELECT customerNumber, SUM(amount) AS payTotal
+FROM payments
+GROUP BY customerNumber
+ORDER BY customerNumber;
+
+SELECT * FROM CustomerSales;
+SELECT * FROM CustomerPayments;
+
+SELECT CustomerSales.customerNumber, customerName, sales-payTotal AS amountRemaining 
+FROM CustomerSales
+LEFT JOIN CustomerPayments ON CustomerSales.customerNumber = CustomerPayments.customerNumber;
+
+--  Using an appropriate join find the products which do not have any sales.
+
+SELECT * FROM products 
+LEFT JOIN orderdetails ON products.productCode = orderdetails.productCode
+WHERE orderdetails.productCode IS NULL
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--Stored Procedures
+
+--Create a stored procedure called employee_details which lists all employee’s first name, last name, extension, email,  city and country.
+
+CREATE PROCEDURE `employee_details`()
+NOT DETERMINISTIC NO SQL 
+SECURITY DEFINER BEGIN Select employees.lastName, employees.firstname, 
+employees.extension,employees.email , offices.city,offices.country FROM 
+employees Join offices ON employees.officeCode = offices.officecode; END
+
+--Create a stored procedure called customer_rep that takes a customerNumber as a parameter and lists the customer’s sales representative’s first name, 
+--last name and City they are located in.
+
+CREATE PROCEDURE `customer_rep`(IN `'CustNum'` INT(11) UNSIGNED) 
+NOT DETERMINISTIC CONTAINS SQL SQL SECURITY DEFINER BEGIN SELECT 
+employees.firstName, employees.lastName, offices.city FROM employees JOIN 
+customers ON customers.salesRepEmployeeNumber = employees.employeeNumber JOIN 
+offices ON employees.officeCode = offices.officeCode WHERE customers.customerNumber = custNum; END
+
+--Create a stored procedure customer_product_orders  that takes as parameters the customerNumber and for each order detail, list the orderNumber, 
+--orderDate, productName and quantity ordered for that customer.
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `customer_product_orders`(IN `custNum` INT(11))
+BEGIN
+SELECT orders.orderNumber, orders.orderDate, products.productName, 	orderdetails.quantityOrdered
+FROM orders
+JOIN orderdetails ON orders.orderNumber = orderdetails.orderNumber
+JOIN products ON orderdetails.productCode = products.productCode
+WHERE orders.customerNumber = 103;
+END
+
+
