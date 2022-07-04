@@ -72,37 +72,3 @@ LEFT JOIN orderdetails ON products.productCode = orderdetails.productCode
 WHERE orderdetails.productCode IS NULL
 
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------
-
---Stored Procedures
-
---Create a stored procedure called employee_details which lists all employee’s first name, last name, extension, email,  city and country.
-
-CREATE PROCEDURE `employee_details`()
-NOT DETERMINISTIC NO SQL 
-SECURITY DEFINER BEGIN Select employees.lastName, employees.firstname, 
-employees.extension,employees.email , offices.city,offices.country FROM 
-employees Join offices ON employees.officeCode = offices.officecode; END
-
---Create a stored procedure called customer_rep that takes a customerNumber as a parameter and lists the customer’s sales representative’s first name, 
---last name and City they are located in.
-
-CREATE PROCEDURE `customer_rep`(IN `'CustNum'` INT(11) UNSIGNED) 
-NOT DETERMINISTIC CONTAINS SQL SQL SECURITY DEFINER BEGIN SELECT 
-employees.firstName, employees.lastName, offices.city FROM employees JOIN 
-customers ON customers.salesRepEmployeeNumber = employees.employeeNumber JOIN 
-offices ON employees.officeCode = offices.officeCode WHERE customers.customerNumber = custNum; END
-
---Create a stored procedure customer_product_orders  that takes as parameters the customerNumber and for each order detail, list the orderNumber, 
---orderDate, productName and quantity ordered for that customer.
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `customer_product_orders`(IN `custNum` INT(11))
-BEGIN
-SELECT orders.orderNumber, orders.orderDate, products.productName, 	orderdetails.quantityOrdered
-FROM orders
-JOIN orderdetails ON orders.orderNumber = orderdetails.orderNumber
-JOIN products ON orderdetails.productCode = products.productCode
-WHERE orders.customerNumber = 103;
-END
-
-
